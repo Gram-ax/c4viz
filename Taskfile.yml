@@ -69,7 +69,6 @@ tasks:
         dir: backend
     run: once
 
-  # And these two just for maintainers who can tag git and push docker images...
   release-latest:
     deps:
       - docker-build
@@ -89,6 +88,16 @@ tasks:
       - git push origin $projversion
       - docker tag pmorch/c4viz:latest pmorch/c4viz:$projversion
       - docker push pmorch/c4viz:$projversion
+    env:
+      projversion:
+        sh: cd backend && ./gradlew properties -q | grep "version:" | awk '{print $2}'
+
+  release-multi-platform:
+    cmds:
+      - echo Attempting to release version $projversion for x86 and arm64
+      - docker buildx create --use --name mybuilder
+      - docker buildx build --platform linux/amd64,linux/arm64 -t gramax/gramax-c4-server:latest -t gramax/gramax-c4-server:$projversion --build-arg version=$projversion --push .
+      - docker buildx rm mybuilder
     env:
       projversion:
         sh: cd backend && ./gradlew properties -q | grep "version:" | awk '{print $2}'
